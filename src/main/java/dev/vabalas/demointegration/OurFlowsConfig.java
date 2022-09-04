@@ -106,6 +106,9 @@ public class OurFlowsConfig {
         };
     }
 
+    // could have transformer from ScenarioX to UniversalRequest
+    // and then have separate transformer for calling masterHandler
+
     private GenericHandler<ScenarioB> doSomeAdditionalProcess() {
         return (payload, headers) -> {
             payload.setAdditionalProcess("ADDITIONAL PROCCESS HAPPENED");
