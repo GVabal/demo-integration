@@ -5,6 +5,12 @@ public class ScenarioB extends Scenario {
     private FlowBRequest request;
     private String additionalProcess;
 
+    public static ScenarioB from(FlowBRequest request) {
+        var scenario = new ScenarioB();
+        scenario.setRequest(request);
+        return scenario;
+    }
+
     public FlowBRequest getRequest() {
         return request;
     }
@@ -12,7 +18,6 @@ public class ScenarioB extends Scenario {
     public void setRequest(FlowBRequest request) {
         this.request = request;
     }
-
 
     public String getAdditionalProcess() {
         return additionalProcess;

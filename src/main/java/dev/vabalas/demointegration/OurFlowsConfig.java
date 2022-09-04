@@ -23,10 +23,11 @@ public class OurFlowsConfig {
 
     // TODO transactional flows: https://stackoverflow.com/questions/49893900/how-to-handle-transactions-for-spring-integration-flows-java-dsl
     // TODO retries on failed operations, graceful exits
+    // TODO testing components
 
     // we have a flow that describes how to route the message to the right channel, in this case mapping by request object
     @Bean
-    public IntegrationFlow caseHandlerRouterFlow() {
+    public IntegrationFlow caseHandlerRouter() {
         return IntegrationFlows.from(caseHandlerChannel())
                 .<Object, Class<?>>route(Object::getClass, routerSpec ->
                         routerSpec
@@ -66,33 +67,18 @@ public class OurFlowsConfig {
     // various building blocks for our flows that could be re-used, could be easily tested, mixed and matched in desired order, etc.
     // could live as @Beans for easy access in all application
 
-    private static Scenario prepareScenarioFromRequest(GenericRequest request) {
-        Scenario scenario;
-        if (request instanceof FlowBRequest bRequest) {
-            scenario = new ScenarioB();
-            ((ScenarioB) scenario).setRequest(bRequest);
-        }
-        else if (request instanceof FlowARequest aRequest) {
-            scenario = new ScenarioA();
-            ((ScenarioA) scenario).setRequest(aRequest);
-        }
-        else {
-            throw new RuntimeException("yeet");
-        }
-        return scenario;
+    private static Scenario prepareScenarioFromRequest(GenericRequest genericRequest) {
+        return switch (genericRequest) {
+            case FlowARequest request -> ScenarioA.builder().withRequest(request).build();
+            case FlowBRequest request -> ScenarioB.from(request);
+            default -> throw new RuntimeException("yeet");
+        };
     }
 
     private GenericHandler<Scenario> fetchDuomenys() {
         return (payload, headers) -> {
             String duomenys = restTemplate.getForEntity("http://localhost:8080/duomenys", String.class).getBody();
             payload.setDuomenys(duomenys);
-            return payload;
-        };
-    }
-
-    private GenericHandler<ScenarioB> doSomeAdditionalProcess() {
-        return (payload, headers) -> {
-            payload.setAdditionalProcess("ADDITIONAL PROCCESS HAPPENED");
             return payload;
         };
     }
@@ -117,6 +103,13 @@ public class OurFlowsConfig {
             // prepares universal request from scenario B
             UniversalRequest requestBody = new UniversalRequest(payload.getDuomenys(), payload.getAdditionalProcess());
             return restTemplate.postForEntity("http://localhost:8080/master-handler?success=" + payload.getRequest().isWithCase(), requestBody, CaseInstance.class).getBody();
+        };
+    }
+
+    private GenericHandler<ScenarioB> doSomeAdditionalProcess() {
+        return (payload, headers) -> {
+            payload.setAdditionalProcess("ADDITIONAL PROCCESS HAPPENED");
+            return payload;
         };
     }
 
